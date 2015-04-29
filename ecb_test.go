@@ -1,9 +1,9 @@
 package ecb
 
 import (
+	"errors"
 	"testing"
 	"time"
-	"errors"
 )
 
 func TestRatesAt(t *testing.T) {
@@ -14,7 +14,7 @@ func TestRatesAt(t *testing.T) {
 	if rate == nil {
 		t.Error(errors.New("No rate found for 5th of January 2015"))
 	}
-	if *rate.RateFor("USD") != 1.1915 {
+	if rate != nil && *rate.RateFor("USD") != 1.1915 {
 		t.Error(errors.New("USD rate for 5th of January 2015 has changed..."))
 	}
 }
@@ -24,7 +24,10 @@ func TestRateForAt(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if *rate != 1.1915 {
-		t.Error(errors.New("USD rate for 5th of January 2015 has changed..."))	
+	if rate == nil {
+		t.Error(errors.New("No rate found"))
+	}
+	if rate != nil && *rate != 1.1915 {
+		t.Error(errors.New("USD rate for 5th of January 2015 has changed..."))
 	}
 }
