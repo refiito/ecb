@@ -15,7 +15,7 @@ var rateCache cachedRates
 func (cache *cachedRates) populate(rangeStart, rangeEnd time.Time) error {
 	xmlURL := allRatesXML
 	today := time.Now()
-	
+
 	if isSameDay(rangeStart, rangeEnd) && isSameDay(rangeStart, today) {
 		xmlURL = dailyRatesXML
 	}
