@@ -2,9 +2,10 @@ package ecb
 
 import (
 	"encoding/xml"
-	"net/http"
 	"strconv"
 	"time"
+
+  "github.com/refiito/timeoutclient"
 )
 
 // ECB XML envelope
@@ -31,7 +32,8 @@ type (
 )
 
 func fetchXML() (result envelope, err error) {
-	response, err := http.Get("http://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.xml")
+  client := timeoutclient.NewTimeoutClient(3000*time.Millisecond, 3000*time.Millisecond)
+  response, err := client.Get("http://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.xml")
 	if err != nil {
 		return
 	}
