@@ -47,21 +47,21 @@ func TestRatesForBetween(t *testing.T) {
 		t.Error(fmt.Errorf("Element 0 has different time than expected, %v", rates[0].Date))
 	}
 	if !rates[1].Date.Equal(time.Date(2015, 4, 14, 0, 0, 0, 0, time.UTC)) {
-		t.Error(fmt.Errorf("Element 0 has different time than expected, %v", rates[0].Date))
+		t.Error(fmt.Errorf("Element 1 has different time than expected, %v", rates[0].Date))
 	}
 	if !rates[2].Date.Equal(time.Date(2015, 4, 13, 0, 0, 0, 0, time.UTC)) {
-		t.Error(fmt.Errorf("Element 0 has different time than expected, %v", rates[0].Date))
+		t.Error(fmt.Errorf("Element 2 has different time than expected, %v", rates[0].Date))
 	}
 	if !rates[3].Date.Equal(time.Date(2015, 4, 10, 0, 0, 0, 0, time.UTC)) {
-		t.Error(fmt.Errorf("Element 0 has different time than expected, %v", rates[0].Date))
+		t.Error(fmt.Errorf("Element 3 has different time than expected, %v", rates[0].Date))
 	}
 	if !rates[4].Date.Equal(time.Date(2015, 4, 9, 0, 0, 0, 0, time.UTC)) {
-		t.Error(fmt.Errorf("Element 0 has different time than expected, %v", rates[0].Date))
+		t.Error(fmt.Errorf("Element 4 has different time than expected, %v", rates[0].Date))
 	}
 	if !rates[5].Date.Equal(time.Date(2015, 4, 8, 0, 0, 0, 0, time.UTC)) {
-		t.Error(fmt.Errorf("Element 0 has different time than expected, %v", rates[0].Date))
+		t.Error(fmt.Errorf("Element 5 has different time than expected, %v", rates[0].Date))
 	}
 	if !rates[6].Date.Equal(time.Date(2015, 4, 7, 0, 0, 0, 0, time.UTC)) {
-		t.Error(fmt.Errorf("Element 0 has different time than expected, %v", rates[0].Date))
+		t.Error(fmt.Errorf("Element 6 has different time than expected, %v", rates[0].Date))
 	}
 }
