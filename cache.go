@@ -58,3 +58,7 @@ func (cache *cachedRates) ratesBetween(rangeStart, rangeEnd time.Time) (result [
 	}
 	return
 }
+
+func isSameDay(t1, t2 time.Time) (result bool) {
+	return t1.Year() == t2.Year() && t1.Month() == t2.Month() && t1.Day() == t2.Day()
+}
