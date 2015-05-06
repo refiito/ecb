@@ -49,11 +49,12 @@ func (cache *cachedRates) populate(rangeStart, rangeEnd time.Time, flow chan *Re
 }
 
 func (cache *cachedRates) ratesAt(date time.Time) (*ReferenceRate, error) {
-	rates, err := cache.ratesBetween(date, date)
+	rates := make(chan *ReferenceRate, 1)
+	err := cache.fetch(date, date, rates)
 	if len(rates) == 0 {
 		return nil, err
 	}
-	return &rates[0], err
+	return <-rates, err
 }
 
 func (cache *cachedRates) fetchWithPopulate(rangeStart, rangeEnd time.Time, result chan *ReferenceRate) (err error) {
