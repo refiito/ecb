@@ -56,6 +56,44 @@ func (cache *cachedRates) ratesAt(date time.Time) (*ReferenceRate, error) {
 	return &rates[0], err
 }
 
+func (cache *cachedRates) fetchWithPopulate(rangeStart, rangeEnd time.Time, result chan *ReferenceRate) (err error) {
+	rates := make(chan *ReferenceRate)
+	err = cache.populate(rangeStart, rangeEnd, rates)
+	for {
+		rate := <-rates
+		if rate == nil {
+			break
+		}
+		if (rate.Date.After(rangeStart) && rate.Date.Before(rangeEnd)) || isSameDay(rangeStart, rate.Date) || isSameDay(rangeEnd, rate.Date) {
+			result <- rate
+		}
+	}
+	return
+}
+
+func (cache *cachedRates) rangeCached(rangeStart, rangeEnd time.Time) bool {
+	return cache.rates != nil && !cache.start.IsZero() && !cache.end.IsZero() && !rangeStart.Before(cache.start) && !rangeEnd.After(cache.end)
+}
+
+func (cache *cachedRates) fetchFromCache(rangeStart, rangeEnd time.Time, result chan *ReferenceRate) (err error) {
+	if !cache.rangeCached(rangeStart, rangeEnd) {
+		return cache.fetchWithPopulate(rangeStart, rangeEnd, result)
+	}
+	for _, rate := range cache.rates {
+		if (rate.Date.After(rangeStart) && rate.Date.Before(rangeEnd)) || isSameDay(rangeStart, rate.Date) || isSameDay(rangeEnd, rate.Date) {
+			result <- rate
+		}
+	}
+	return
+}
+
+func (cache *cachedRates) fetch(rangeStart, rangeEnd time.Time, result chan *ReferenceRate) (err error) {
+	if !cache.rangeCached(rangeStart, rangeEnd) {
+		return cache.fetchWithPopulate(rangeStart, rangeEnd, result)
+	}
+	return cache.fetchFromCache(rangeStart, rangeEnd, result)
+}
+
 func (cache *cachedRates) ratesBetween(rangeStart, rangeEnd time.Time) (result []ReferenceRate, err error) {
 	if cache.start.IsZero() || cache.end.IsZero() || rangeStart.Before(cache.start) || rangeEnd.After(cache.end) {
 		err = cache.populate(rangeStart, rangeEnd, nil)
