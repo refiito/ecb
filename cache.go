@@ -24,25 +24,27 @@ func (cache *cachedRates) populate(rangeStart, rangeEnd time.Time, flow chan *Re
 		xmlURL = quarterlyRatesXML
 	}
 	rates := make(chan *ReferenceRate)
+	go func() {
+		for {
+			rate := <-rates
+			if rate == nil {
+				break
+			}
+			if flow != nil {
+				flow <- rate
+			}
+			cache.rates = append(cache.rates, rate)
+			if cache.start.IsZero() || rate.Date.Before(cache.start) {
+				cache.start = rate.Date
+			}
+			if cache.end.IsZero() || rate.Date.After(cache.end) {
+				cache.end = rate.Date
+			}
+		}
+	}()
 	err := fetchRates(xmlURL, rates)
 	if err != nil {
 		return err
-	}
-	for {
-		rate := <-rates
-		if rate == nil {
-			break
-		}
-		if flow != nil {
-			flow <- rate
-		}
-		cache.rates = append(cache.rates, rate)
-		if cache.start.IsZero() || rate.Date.Before(cache.start) {
-			cache.start = rate.Date
-		}
-		if cache.end.IsZero() || rate.Date.After(cache.end) {
-			cache.end = rate.Date
-		}
 	}
 
 	return nil

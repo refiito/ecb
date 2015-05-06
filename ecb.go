@@ -31,15 +31,36 @@ func CurrencyRateAt(date time.Time, currency string) (result CurrencyRate, err e
 		err = errors.New("Date before data start")
 		return
 	}
-	rates, err := RatesAt(date)
-	if err != nil {
-		return
+
+	for i := 0; i < 5; i++ {
+		rates, err := RatesAt(date.AddDate(0, 0, -1*i))
+		if err != nil {
+			return result, err
+		}
+		if rates != nil {
+			result = CurrencyRate{Date: date, Currency: currency, Rate: rates.RateFor(currency)}
+		}
 	}
-	if rates == nil {
-		return CurrencyRateAt(date.AddDate(0, 0, -1), currency)
-	}
-	result = CurrencyRate{Date: date, Currency: currency, Rate: rates.RateFor(currency)}
+
 	return
+}
+
+func FilledCurrencyRatesBetween(rangeStart, rangeEnd time.Time, currency string, result chan *CurrencyRate) error {
+	checkDate := rangeStart
+	end := rangeEnd.Sub(rangeStart).Hours() / 24
+	for i := 0; i < int(end); i++ {
+		rateAt, err := CurrencyRateAt(checkDate.AddDate(0, 0, i), currency)
+		if err != nil {
+			return err
+		}
+		result <- &rateAt
+	}
+	result <- nil
+	return nil
+}
+
+func PreWarmCache(rangeStart, rangeEnd time.Time) error {
+	return rateCache.populate(rangeStart, rangeEnd, nil)
 }
 
 func RateForAt(date time.Time, currency string) (*float64, error) {
