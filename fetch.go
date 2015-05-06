@@ -37,12 +37,10 @@ func fetchXML(xmlURL string) (result envelope, err error) {
 	return
 }
 
-func fetchRates(xmlURL string) ([]ReferenceRate, error) {
-	var result []ReferenceRate
-
+func fetchRates(xmlURL string, result chan *ReferenceRate) error {
 	data, err := fetchXML(xmlURL)
 	if err != nil {
-		return result, err
+		return err
 	}
 
 	for _, date := range data.Data {
@@ -51,19 +49,20 @@ func fetchRates(xmlURL string) ([]ReferenceRate, error) {
 		refRate.Rates = append(refRate.Rates, Rate{Currency: "EUR", Rate: 1.0})
 
 		if parsedDate, err := time.Parse("2006-01-02", date.Date); err != nil {
-			return result, err
+			return err
 		} else {
 			refRate.Date = parsedDate
 		}
 
 		for _, item := range date.Rates {
 			if parsedRate, err := strconv.ParseFloat(item.Rate, 64); err != nil {
-				return result, err
+				return err
 			} else {
 				refRate.Rates = append(refRate.Rates, Rate{Currency: item.Currency, Rate: parsedRate})
 			}
 		}
-		result = append(result, refRate)
+		result <- &refRate
 	}
-	return result, nil
+	result <- nil
+	return nil
 }

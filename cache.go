@@ -7,12 +7,12 @@ import (
 type cachedRates struct {
 	start time.Time
 	end   time.Time
-	rates []ReferenceRate
+	rates []*ReferenceRate
 }
 
 var rateCache cachedRates
 
-func (cache *cachedRates) populate(rangeStart, rangeEnd time.Time) error {
+func (cache *cachedRates) populate(rangeStart, rangeEnd time.Time, flow chan *ReferenceRate) error {
 	xmlURL := allRatesXML
 	today := time.Now()
 
@@ -23,14 +23,26 @@ func (cache *cachedRates) populate(rangeStart, rangeEnd time.Time) error {
 	if rangeStart.After(today.Add(-2190 * time.Hour)) {
 		xmlURL = quarterlyRatesXML
 	}
-	rates, err := fetchRates(xmlURL)
+	rates := make(chan *ReferenceRate)
+	err := fetchRates(xmlURL, rates)
 	if err != nil {
 		return err
 	}
-	cache.rates = rates
-	if len(cache.rates) > 0 {
-		cache.start = cache.rates[len(cache.rates)-1].Date
-		cache.end = cache.rates[0].Date
+	for {
+		rate := <-rates
+		if rate == nil {
+			break
+		}
+		if flow != nil {
+			flow <- rate
+		}
+		cache.rates = append(cache.rates, rate)
+		if cache.start.IsZero() || rate.Date.Before(cache.start) {
+			cache.start = rate.Date
+		}
+		if cache.end.IsZero() || rate.Date.After(cache.end) {
+			cache.end = rate.Date
+		}
 	}
 
 	return nil
@@ -46,14 +58,14 @@ func (cache *cachedRates) ratesAt(date time.Time) (*ReferenceRate, error) {
 
 func (cache *cachedRates) ratesBetween(rangeStart, rangeEnd time.Time) (result []ReferenceRate, err error) {
 	if cache.start.IsZero() || cache.end.IsZero() || rangeStart.Before(cache.start) || rangeEnd.After(cache.end) {
-		err = cache.populate(rangeStart, rangeEnd)
+		err = cache.populate(rangeStart, rangeEnd, nil)
 		if err != nil {
 			return
 		}
 	}
 	for _, rate := range cache.rates {
 		if (rate.Date.After(rangeStart) && rate.Date.Before(rangeEnd)) || isSameDay(rangeStart, rate.Date) || isSameDay(rangeEnd, rate.Date) {
-			result = append(result, rate)
+			result = append(result, *rate)
 		}
 	}
 	return
