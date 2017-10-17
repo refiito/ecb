@@ -12,7 +12,16 @@ type cachedRates struct {
 
 var rateCache cachedRates
 
-func (cache *cachedRates) populate(rangeStart, rangeEnd time.Time, flow chan *ReferenceRate) error {
+func (cache *cachedRates) getRate(date time.Time) *ReferenceRate {
+	for _, rate := range cache.rates {
+		if isSameDay(rate.Date, date) {
+			return rate
+		}
+	}
+	return nil
+}
+
+func (cache *cachedRates) populate(rangeStart, rangeEnd time.Time) error {
 	xmlURL := allRatesXML
 	today := time.Now()
 
@@ -29,7 +38,11 @@ func (cache *cachedRates) populate(rangeStart, rangeEnd time.Time, flow chan *Re
 		return err
 	}
 	for _, rate := range refRates {
-		cache.rates = append(cache.rates, rate)
+		// Skip existing rates
+		if cache.getRate(rate.Date) == nil {
+			cache.rates = append(cache.rates, rate)
+		}
+
 		if cache.start.IsZero() || rate.Date.Before(cache.start) {
 			cache.start = rate.Date
 		}
