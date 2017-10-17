@@ -26,23 +26,26 @@ func RatesAt(date time.Time) (*ReferenceRate, error) {
 	return rateCache.ratesAt(date)
 }
 
-func CurrencyRateAt(date time.Time, currency string) (result CurrencyRate, err error) {
+func CurrencyRateAt(date time.Time, currency string) (*CurrencyRate, error) {
 	if date.Before(time.Date(1999, 1, 4, 0, 0, 0, 0, time.UTC)) {
-		err = errors.New("Date before data start")
-		return
+		return nil, errors.New("Date before data start")
 	}
 
 	for i := 0; i < 5; i++ {
 		rates, err := RatesAt(date.AddDate(0, 0, -1*i))
 		if err != nil {
-			return result, err
+			return nil, err
 		}
-		if rates != nil {
-			result = CurrencyRate{Date: date, Currency: currency, Rate: rates.RateFor(currency)}
+		if rates == nil {
+			continue
 		}
+
+		// Don't output pointer to value
+		rateFloat := *rates.RateFor(currency)
+		return &CurrencyRate{Date: date, Currency: currency, Rate: &rateFloat}, nil
 	}
 
-	return
+	return nil, nil
 }
 
 func FilledCurrencyRatesBetween(rangeStart, rangeEnd time.Time, currency string, result chan *CurrencyRate) error {
