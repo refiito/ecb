@@ -33,6 +33,28 @@ func TestRateForAt(t *testing.T) {
 	}
 }
 
+func TestCurrencyRateAt(t *testing.T) {
+	toCheck := map[time.Time]float64{
+		time.Date(2017, 9, 18, 0, 0, 0, 0, time.UTC): 1.1948,
+		time.Date(2017, 9, 22, 0, 0, 0, 0, time.UTC): 1.1961,
+		time.Date(2017, 9, 23, 0, 0, 0, 0, time.UTC): 1.1961, // Uses the 2017-09-22 rate
+	}
+	for date, shouldBe := range toCheck {
+		rate, err := CurrencyRateAt(date, "USD")
+		if err != nil {
+			t.Error(err)
+		} else if rate == nil {
+			t.Error(errors.New("No rate found"))
+		} else if !isSameDay(rate.Date, date) {
+			t.Error(errors.New(fmt.Sprintf("Rate date %s != %s", rate.Date.Format("2006-01-02"), date.Format("2006-01-02"))))
+		} else if rate.Currency != "USD" {
+			t.Error(errors.New(fmt.Sprintf("Rate currency %v != USD", rate.Currency)))
+		} else if *rate.Rate != shouldBe {
+			t.Error(errors.New(fmt.Sprintf("USD rate for %s, %f != %f", date.Format("2006-01-02"), *rate.Rate, shouldBe)))
+		}
+	}
+}
+
 func TestRatesForBetween(t *testing.T) {
 	startTime := time.Date(2015, 4, 5, 12, 12, 12, 0, time.UTC)
 	endTime := time.Date(2015, 4, 15, 12, 12, 12, 0, time.UTC)

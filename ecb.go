@@ -48,31 +48,29 @@ func CurrencyRateAt(date time.Time, currency string) (*CurrencyRate, error) {
 	return nil, nil
 }
 
-func FilledCurrencyRatesBetween(rangeStart, rangeEnd time.Time, currency string, result chan *CurrencyRate) error {
+func FilledCurrencyRatesBetween(rangeStart, rangeEnd time.Time, currency string) ([]*CurrencyRate, error) {
 	checkDate := rangeStart
-	end := rangeEnd.Sub(rangeStart).Hours() / 24
-	for i := 0; i < int(end); i++ {
+	daysNum := int(rangeEnd.Sub(rangeStart).Hours() / 24)
+
+	rates := make([]*CurrencyRate, 0, daysNum)
+	for i := 0; i < daysNum; i++ {
 		rateAt, err := CurrencyRateAt(checkDate.AddDate(0, 0, i), currency)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		result <- &rateAt
+		rates = append(rates, rateAt)
 	}
-	result <- nil
-	return nil
+	return rates, nil
 }
 
 func PreWarmCache(rangeStart, rangeEnd time.Time) error {
-	return rateCache.populate(rangeStart, rangeEnd, nil)
+	return rateCache.populate(rangeStart, rangeEnd)
 }
 
 func RateForAt(date time.Time, currency string) (*float64, error) {
 	rate, err := RatesAt(date)
-	if err != nil {
+	if err != nil || rate == nil {
 		return nil, err
-	}
-	if rate == nil {
-		return nil, nil
 	}
 	return rate.RateFor(currency), nil
 }
@@ -89,17 +87,18 @@ func RatesForBetween(rangeStart, rangeEnd time.Time, currency string) ([]Currenc
 	return result, nil
 }
 
-func FilledRatesForBetween(rangeStart, rangeEnd time.Time, currency string) ([]CurrencyRate, error) {
-	var result []CurrencyRate
+func FilledRatesForBetween(rangeStart, rangeEnd time.Time, currency string) ([]*CurrencyRate, error) {
 	// Warm the cache, not caring about the return here, only the error
 	_, err := rateCache.ratesBetween(rangeStart, rangeEnd)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
+
+	var result []*CurrencyRate
 	for checkDate := rangeStart; !isOneDayLater(checkDate, rangeEnd); checkDate.AddDate(0, 0, 1) {
 		rateAt, err := CurrencyRateAt(checkDate, currency)
 		if err != nil {
-			return result, err
+			return nil, err
 		}
 		result = append(result, rateAt)
 	}
@@ -109,7 +108,8 @@ func FilledRatesForBetween(rangeStart, rangeEnd time.Time, currency string) ([]C
 func (rate *ReferenceRate) RateFor(currency string) *float64 {
 	for _, r := range rate.Rates {
 		if r.Currency == currency {
-			return &r.Rate
+			tmp := r.Rate // Don't return a direct pointer
+			return &tmp
 		}
 	}
 	return nil
